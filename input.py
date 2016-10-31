@@ -16,7 +16,7 @@ def read_and_decode(filename_queue):
         # Defaults are not specified since both keys are required.
         features={
             'image_raw': tf.FixedLenFeature([], tf.string),
-            'label': tf.FixedLenFeature([], tf.int64),
+            'label': tf.FixedLenFeature([], tf.float32),
         })
 
     # Convert from a scalar string tensor (whose single string has
