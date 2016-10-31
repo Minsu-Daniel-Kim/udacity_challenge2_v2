@@ -79,7 +79,7 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
         # (Internally uses a RandomShuffleQueue.)
         # We run this in two threads to avoid being a bottleneck.
         images, sparse_labels = tf.train.shuffle_batch(
-            [image, label], batch_size=batch_size, num_threads=2,
+            [image, label], batch_size=batch_size, num_threads=4,
             capacity=1000 + 3 * batch_size,
             # Ensures a minimum amount of shuffling of examples.
             min_after_dequeue=1000)

@@ -39,7 +39,7 @@ def make_tfrecords(images, labels, type):
             'height': _int64_feature(rows),
             'width': _int64_feature(cols),
             'depth': _int64_feature(depth),
-            'label': _float_feature(int(labels[index])),
+            'label': _float_feature(float(labels[index])),
             'image_raw': _bytes_feature(image_raw)}))
         writer.write(example.SerializeToString())
 
