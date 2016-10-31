@@ -25,5 +25,7 @@ def vgg16(inputs):
         net = slim.dropout(net, 0.5, scope='dropout6')
         net = slim.fully_connected(net, 4096, scope='fc7')
         net = slim.dropout(net, 0.5, scope='dropout7')
-        net = slim.fully_connected(net, 1000, activation_fn=None, scope='fc8')
+        net = slim.fully_connected(net, 1000, scope='fc8')
+        net = slim.dropout(net, 0.5, scope='dropout8')
+        net = slim.fully_connected(net, 1, activation_fn=None, scope='fc9')
     return net
