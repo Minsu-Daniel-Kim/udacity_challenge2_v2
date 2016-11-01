@@ -8,6 +8,7 @@ from tensorflow.examples.tutorials.mnist import mnist
 
 TRAIN_FILE = 'train.tfrecords'
 VALIDATION_FILE = 'validation.tfrecords'
+TEST_FILE = 'test.tfrecords'
 SUBMISSION_FILE = 'submission_test.tfrecords'
 
 
@@ -103,9 +104,7 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
             # Even when reading in multiple threads, share the filename
             # queue.
             image, img_name = submission_read_and_decode(filename_queue)
-            # print("image: ", image)
-            # print("label1: ", label)
-            #
+
             images = []
             img_names = []
             with tf.Session() as sess:
@@ -118,25 +117,40 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
                     a, b = sess.run([image, img_name])
                     images.append(a)
                     img_names.append(b)
-                    # print(images)
-                    # print(example)
-                    # print(label)
+
                 coord.request_stop()
                 coord.join(threads)
                 print('done!!')
 
-            # if one_hot_labels:
-            #     label = tf.one_hot(label, mnist.NUM_CLASSES, dtype=tf.int32)
-
-            # print("label2: ", label)
-
-            # Shuffle the examples and collect them into batch_size batches.
-            # (Internally uses a RandomShuffleQueue.)
-            # We run this in two threads to avoid being a bottleneck.
-            # images, img_names = tf.train.batch(
-            #     [image, img_name], batch_size=batch_size, num_threads=4)
-
         return np.array(images), np.array(img_names)
+
+    elif train is "test":
+        filename = os.path.join(train_dir, TEST_FILE)
+
+        with tf.name_scope('input'):
+            filename_queue = tf.train.string_input_producer(
+                [filename], num_epochs=num_epochs)
+
+            image, label = read_and_decode(filename_queue)
+
+            images = []
+            labels = []
+
+            with tf.Session() as sess:
+                # Start populating the filename queue.
+                coord = tf.train.Coordinator()
+                threads = tf.train.start_queue_runners(coord=coord)
+
+                for i in range(batch_size):
+                    # Retrieve a single instance:
+                    a, b = sess.run([image, label])
+                    images.append(a)
+                    labels.append(b)
+
+                coord.request_stop()
+                coord.join(threads)
+        return np.array(images), np.array(labels)
+
 
 
 
@@ -151,13 +165,9 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
             # Even when reading in multiple threads, share the filename
             # queue.
             image, label = read_and_decode(filename_queue)
-            print("image: ", image)
-            print("label1: ", label)
+            # if one_hot_labels:
+            #     label = tf.one_hot(label, mnist.NUM_CLASSES, dtype=tf.int32)
 
-            if one_hot_labels:
-                label = tf.one_hot(label, mnist.NUM_CLASSES, dtype=tf.int32)
-
-            print("label2: ", label)
 
             # Shuffle the examples and collect them into batch_size batches.
             # (Internally uses a RandomShuffleQueue.)

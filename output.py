@@ -20,6 +20,15 @@ parser.add_argument('--model')
 args = parser.parse_args()
 print(args.model)
 
+models = {
+
+    'lenet': lenet,
+    'alexnet': alexnet_v2,
+    'resnet': resnet_v1_50,
+    'cifarnet': cifarnet,
+    'vgg': vgg16
+}
+
 def export_result(frame_id_lst, steering_angle_lst, model):
     dict = {'frame_id': frame_id_lst, 'steering_angle': steering_angle_lst}
     pd.DataFrame(dict).to_csv("result/%s_output.csv" % model,index=False)
@@ -39,7 +48,7 @@ def main():
         image, img_name = inputs("./data", "submission", 6601, None, one_hot_labels=False)
         images, img_names = convert_data_to_tensors(image, img_name)
 
-        predictions = cifarnet(images)
+        predictions = models[args.model](images)
         ckpt_dir = 'log/%s/train' % args.model
         sv = tf.train.Supervisor(logdir=ckpt_dir)
         with sv.managed_session() as sess:

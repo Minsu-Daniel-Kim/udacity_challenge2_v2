@@ -46,23 +46,23 @@ def main(train_dir, batch_size, num_batches, log_dir, checkpoint_dir=None):
         init_op = tf.initialize_all_variables()
         print(predictions)
 
-    #
-    #
-    # metrics_to_values, metrics_to_updates = slim.metrics.aggregate_metric_map({
-    #     "streaming_mse": slim.metrics.streaming_mean_squared_error(predictions, labels),
-    # })
-    #
-    # tf.scalar_summary('mse', metrics_to_values['streaming_mse'])
-    #
-    # # Evaluate every 30 seconds
-    # slim.evaluation.evaluation_loop(
-    #     '',
-    #     checkpoint_dir,
-    #     log_dir,
-    #     num_evals=num_batches,
-    #     eval_op=metrics_to_updates['streaming_mse'],
-    #     summary_op=tf.merge_all_summaries(),
-    #     eval_interval_secs=30)
+
+
+    metrics_to_values, metrics_to_updates = slim.metrics.aggregate_metric_map({
+        "streaming_mse": slim.metrics.streaming_mean_squared_error(predictions, labels),
+    })
+
+    tf.scalar_summary('mse', metrics_to_values['streaming_mse'])
+
+    # Evaluate every 30 seconds
+    slim.evaluation.evaluation_loop(
+        '',
+        checkpoint_dir,
+        log_dir,
+        num_evals=num_batches,
+        eval_op=metrics_to_updates['streaming_mse'],
+        summary_op=tf.merge_all_summaries(),
+        eval_interval_secs=30)
 
 
 if __name__=='__main__':
