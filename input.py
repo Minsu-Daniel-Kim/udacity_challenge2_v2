@@ -1,11 +1,14 @@
 import os
 
+import numpy as np
+
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from tensorflow.examples.tutorials.mnist import mnist
 
 TRAIN_FILE = 'train.tfrecords'
 VALIDATION_FILE = 'validation.tfrecords'
+SUBMISSION_FILE = 'submission_test.tfrecords'
 
 
 def read_and_decode(filename_queue):
@@ -39,6 +42,38 @@ def read_and_decode(filename_queue):
 
     return image, label
 
+def submission_read_and_decode(filename_queue):
+    reader = tf.TFRecordReader()
+    _, serialized_example = reader.read(filename_queue)
+    features = tf.parse_single_example(
+        serialized_example,
+        # Defaults are not specified since both keys are required.
+        features={
+            'image_raw': tf.FixedLenFeature([], tf.string),
+            'img_name': tf.FixedLenFeature([], tf.string),
+        })
+
+    # Convert from a scalar string tensor (whose single string has
+    # length mnist.IMAGE_PIXELS) to a uint8 tensor with shape
+    # [mnist.IMAGE_PIXELS].
+    image = tf.decode_raw(features['image_raw'], tf.uint8)
+    img_name = tf.decode_raw(features['img_name'], tf.int64)
+
+    image.set_shape([60 * 80 * 3])
+    image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
+    image = tf.reshape(image, [60, 80, 3])
+    tf.image.per_image_whitening(image)
+    # OPTIONAL: Could reshape into a 28x28 image and apply distortions
+    # here.  Since we are not applying any distortions in this
+    # example, and the next step expects the image to be flattened
+    # into a vector, we don't bother.
+
+    # Convert label from a scalar uint8 tensor to an int32 scalar.
+    # label = tf.cast(features['label'], tf.float32)
+    img_name = tf.reshape(img_name, [1])
+
+    return image, img_name
+
 
 def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
     """Reads input data num_epochs times.
@@ -57,31 +92,80 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
         must be run using e.g. tf.train.start_queue_runners().
     """
     if not num_epochs: num_epochs = None
-    filename = os.path.join(train_dir,
-                            TRAIN_FILE if train else VALIDATION_FILE)
 
-    with tf.name_scope('input'):
-        filename_queue = tf.train.string_input_producer(
-            [filename], num_epochs=num_epochs)
+    if train is "submission":
+        filename = os.path.join(train_dir, SUBMISSION_FILE)
 
-        # Even when reading in multiple threads, share the filename
-        # queue.
-        image, label = read_and_decode(filename_queue)
-        print("image: ", image)
-        print("label1: ", label)
+        with tf.name_scope('input'):
+            filename_queue = tf.train.string_input_producer(
+                [filename], num_epochs=num_epochs)
 
-        if one_hot_labels:
-            label = tf.one_hot(label, mnist.NUM_CLASSES, dtype=tf.int32)
+            # Even when reading in multiple threads, share the filename
+            # queue.
+            image, img_name = submission_read_and_decode(filename_queue)
+            # print("image: ", image)
+            # print("label1: ", label)
+            #
+            images = []
+            img_names = []
+            with tf.Session() as sess:
+                # Start populating the filename queue.
+                coord = tf.train.Coordinator()
+                threads = tf.train.start_queue_runners(coord=coord)
 
-        print("label2: ", label)
+                for i in range(batch_size):
+                    # Retrieve a single instance:
+                    a, b = sess.run([image, img_name])
+                    images.append(a)
+                    img_names.append(b)
+                    # print(images)
+                    # print(example)
+                    # print(label)
+                coord.request_stop()
+                coord.join(threads)
+                print('done!!')
 
-        # Shuffle the examples and collect them into batch_size batches.
-        # (Internally uses a RandomShuffleQueue.)
-        # We run this in two threads to avoid being a bottleneck.
-        images, sparse_labels = tf.train.shuffle_batch(
-            [image, label], batch_size=batch_size, num_threads=4,
-            capacity=1000 + 3 * batch_size,
-            # Ensures a minimum amount of shuffling of examples.
-            min_after_dequeue=1000)
-    
-    return images, sparse_labels
+            # if one_hot_labels:
+            #     label = tf.one_hot(label, mnist.NUM_CLASSES, dtype=tf.int32)
+
+            # print("label2: ", label)
+
+            # Shuffle the examples and collect them into batch_size batches.
+            # (Internally uses a RandomShuffleQueue.)
+            # We run this in two threads to avoid being a bottleneck.
+            # images, img_names = tf.train.batch(
+            #     [image, img_name], batch_size=batch_size, num_threads=4)
+
+        return np.array(images), np.array(img_names)
+
+
+
+    else:
+
+        filename = os.path.join(train_dir, TRAIN_FILE if train else VALIDATION_FILE)
+
+        with tf.name_scope('input'):
+            filename_queue = tf.train.string_input_producer(
+                [filename], num_epochs=num_epochs)
+
+            # Even when reading in multiple threads, share the filename
+            # queue.
+            image, label = read_and_decode(filename_queue)
+            print("image: ", image)
+            print("label1: ", label)
+
+            if one_hot_labels:
+                label = tf.one_hot(label, mnist.NUM_CLASSES, dtype=tf.int32)
+
+            print("label2: ", label)
+
+            # Shuffle the examples and collect them into batch_size batches.
+            # (Internally uses a RandomShuffleQueue.)
+            # We run this in two threads to avoid being a bottleneck.
+            images, sparse_labels = tf.train.shuffle_batch(
+                [image, label], batch_size=batch_size, num_threads=4,
+                capacity=1000 + 3 * batch_size,
+                # Ensures a minimum amount of shuffling of examples.
+                min_after_dequeue=1000)
+
+        return images, sparse_labels
