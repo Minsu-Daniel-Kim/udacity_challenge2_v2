@@ -14,7 +14,7 @@ flags.DEFINE_string('model', None, "Model name")
 flags.DEFINE_integer('batch_size', 300, 'Batch size.')
 flags.DEFINE_integer('num_batches', None, 'Num of batches to train (epochs).')
 flags.DEFINE_float('learning_rate', None, 'Specify learning rate')
-flags.DEFINE_float('momentum', None, 'Specify momentum')
+# flags.DEFINE_float('momentum', None, 'Specify momentum')
 FLAGS = flags.FLAGS
 
 log_dir = "./log/%s/train" % FLAGS.model
@@ -36,13 +36,13 @@ def main(train_dir, batch_size, num_batches, log_dir):
                             batch_size,
                             num_batches,
                             one_hot_labels=False)
-    predictions = models[FLAGS.model](images)
+    predictions, end_points = models[FLAGS.model](images, is_training=True)
 
     slim.losses.mean_squared_error(predictions, labels)
     total_loss = slim.losses.get_total_loss()
     tf.scalar_summary('loss', total_loss)
 
-    optimizer = tf.train.RMSPropOptimizer(FLAGS.learning_rate, FLAGS.momentum)
+    optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
     train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
 
     slim.learning.train(train_op, log_dir, save_summaries_secs=20)

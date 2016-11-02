@@ -1,9 +1,10 @@
 import tensorflow as tf
 
 import tensorflow.contrib.slim as slim
-from input import inputs
+from util.input import inputs
 from model.lenet import lenet
 from model.vgg16 import vgg16
+from model.driveNet import drivenet
 from model.cifarnet import cifarnet
 from model.alexnet import alexnet_v2
 from model.resnet_v1 import resnet_v1_50
@@ -32,7 +33,8 @@ models = {
     'lenet': lenet,
     'alexnet': alexnet_v2,
     'resnet': resnet_v1_50,
-    'cifarnet_v1': cifarnet,
+    'cifarnet': cifarnet,
+    'drivenet': drivenet,
     'vgg': vgg16
 }
 
@@ -41,12 +43,9 @@ def main(train_dir, batch_size, num_batches, log_dir, checkpoint_dir=None):
         checkpoint_dir = log_dir
 
     images, labels = inputs(train_dir, False, batch_size, num_batches,one_hot_labels=False)
-    predictions = models[FLAGS.model](images)
+    predictions, end_points = models[FLAGS.model](images, is_training=False)
     with tf.Session() as sess:
         init_op = tf.initialize_all_variables()
-        print(predictions)
-
-
 
     metrics_to_values, metrics_to_updates = slim.metrics.aggregate_metric_map({
         "streaming_mse": slim.metrics.streaming_mean_squared_error(predictions, labels),

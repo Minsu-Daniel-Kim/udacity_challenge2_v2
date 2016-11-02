@@ -18,18 +18,20 @@ def alexnet_v2_arg_scope(weight_decay=0.0005):
                 return arg_sc
 
 
-def alexnet_v2(inputs,
+def alexnet_v2(images,
                num_classes=1,
                is_training=True,
                dropout_keep_prob=0.5,
                spatial_squeeze=True,
                scope='alexnet_v2'):
-    with tf.variable_scope(scope, 'alexnet_v2', [inputs]) as sc:
+    with tf.variable_scope(scope, 'alexnet_v2', [images]) as sc:
         end_points_collection = sc.name + '_end_points'
         # Collect outputs for conv2d, fully_connected and max_pool2d.
         with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
                             outputs_collections=[end_points_collection]):
-            net = slim.conv2d(inputs, 64, [11, 11], 4, padding='VALID',
+
+            tf.image_summary("image", images)
+            net = slim.conv2d(images, 64, [11, 11], 4, padding='VALID',
                               scope='conv1')
             net = slim.max_pool2d(net, [3, 3], 2, scope='pool1')
             net = slim.conv2d(net, 192, [5, 5], scope='conv2')
@@ -61,6 +63,7 @@ def alexnet_v2(inputs,
             if spatial_squeeze:
                 net = tf.squeeze(net, [1, 2], name='fc8/squeezed')
                 end_points[sc.name + '/fc8'] = net
-            return net
+            return net, end_points
 
-alexnet_v2.default_image_size = 224
+
+# alexnet_v2.default_image_size = 224

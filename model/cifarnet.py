@@ -25,7 +25,7 @@ slim = tf.contrib.slim
 trunc_normal = lambda stddev: tf.truncated_normal_initializer(stddev=stddev)
 
 
-def cifarnet(images, num_classes=1, is_training=False,
+def cifarnet(images, num_classes=1, is_training=True,
              dropout_keep_prob=0.5,
              prediction_fn=slim.softmax,
              scope='CifarNet'):
@@ -59,7 +59,7 @@ def cifarnet(images, num_classes=1, is_training=False,
 
     with tf.variable_scope(scope, 'CifarNet', [images, num_classes]):
 
-        tf.image_summary("image", images, )
+        tf.image_summary("image", images)
         net = slim.conv2d(images, 64, [5, 5], scope='conv1')
         end_points['conv1'] = net
         net = slim.max_pool2d(net, [2, 2], 2, scope='pool1')
@@ -78,20 +78,15 @@ def cifarnet(images, num_classes=1, is_training=False,
                            scope='dropout3')
         net = slim.fully_connected(net, 192, scope='fc4')
         end_points['fc4'] = net
-        logits = slim.fully_connected(net, num_classes,
+        net = slim.fully_connected(net, num_classes,
                                       biases_initializer=tf.zeros_initializer,
                                       weights_initializer=trunc_normal(1 / 192.0),
                                       weights_regularizer=None,
                                       activation_fn=None,
                                       scope='logits')
-        return logits
-        # end_points['Logits'] = logits
-        # end_points['Predictions'] = prediction_fn(logits, scope='Predictions')
+        return net, end_points
 
-        # return end_points['Predictions']
-
-
-cifarnet.default_image_size = 32
+# cifarnet.default_image_size = 32
 
 
 def cifarnet_arg_scope(weight_decay=0.004):

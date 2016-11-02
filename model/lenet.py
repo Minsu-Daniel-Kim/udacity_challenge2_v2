@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from tensorflow.examples.tutorials.mnist import mnist
 
-def lenet(images, scope='LeNet'):
+def lenet(images, scope='LeNet', is_training=True):
     tf.image_summary("image", images)
     net = slim.layers.conv2d(images, 20, [5,5], padding='SAME', scope='conv1')
     net = slim.layers.max_pool2d(net, [2,2], scope='pool1')
