@@ -32,7 +32,7 @@ models = {
     'lenet': lenet,
     'alexnet': alexnet_v2,
     'resnet': resnet_v1_50,
-    'cifarnet': cifarnet,
+    'cifarnet_v1': cifarnet,
     'vgg': vgg16
 }
 

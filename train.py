@@ -8,7 +8,7 @@ from model.alexnet import alexnet_v2
 from model.resnet_v1 import resnet_v1_50
 
 flags = tf.app.flags
-flags.DEFINE_string('train_dir', './data',
+flags.DEFINE_string('train_dir', None,
                     'Directory with the training data.')
 flags.DEFINE_string('model', None, "Model name")
 flags.DEFINE_integer('batch_size', 300, 'Batch size.')
@@ -23,7 +23,7 @@ models = {
     'lenet': lenet,
     'alexnet': alexnet_v2,
     'resnet': resnet_v1_50,
-    'cifarnet': cifarnet,
+    'cifarnet_v1': cifarnet,
     'vgg': vgg16
 }
 
@@ -46,7 +46,7 @@ def main(train_dir, batch_size, num_batches, log_dir):
     slim.learning.train(train_op,
                         log_dir,
                         save_summaries_secs=20,
-                        number_of_steps=100000)
+                        number_of_steps=1000000)
 
 
 if __name__ == '__main__':

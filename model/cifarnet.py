@@ -36,7 +36,7 @@ def cifarnet(images, num_classes=1, is_training=False,
     probability distribution over the characters, one will need to convert them
     using the softmax function:
 
-          logits = cifarnet.cifarnet(images, is_training=False)
+          logits = cifarnet_v1.cifarnet_v1(images, is_training=False)
           probabilities = tf.nn.softmax(logits)
           predictions = tf.argmax(logits, 1)
 
@@ -58,7 +58,8 @@ def cifarnet(images, num_classes=1, is_training=False,
     end_points = {}
 
     with tf.variable_scope(scope, 'CifarNet', [images, num_classes]):
-        tf.image_summary("image", images)
+
+        tf.image_summary("image", images, )
         net = slim.conv2d(images, 64, [5, 5], scope='conv1')
         end_points['conv1'] = net
         net = slim.max_pool2d(net, [2, 2], 2, scope='pool1')
@@ -94,7 +95,7 @@ cifarnet.default_image_size = 32
 
 
 def cifarnet_arg_scope(weight_decay=0.004):
-    """Defines the default cifarnet argument scope.
+    """Defines the default cifarnet_v1 argument scope.
 
     Args:
       weight_decay: The weight decay to use for regularizing the model.
