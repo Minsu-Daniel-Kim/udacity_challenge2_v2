@@ -1,7 +1,5 @@
 import os
-
 import numpy as np
-
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from tensorflow.examples.tutorials.mnist import mnist
@@ -11,7 +9,9 @@ VALIDATION_FILE = 'validation.tfrecords'
 TEST_FILE = 'augmented_test.tfrecords'
 TEST_CONTRAST_FILE = 'augmented_test_contrast.tfrecords'
 SUBMISSION_FILE = 'submission_test.tfrecords'
-
+CHANNEL = 3
+HEIGHT = 60
+WEIGHT = 80
 
 def read_and_decode(filename_queue):
     reader = tf.TFRecordReader()
@@ -22,59 +22,59 @@ def read_and_decode(filename_queue):
         features={
             'image_raw': tf.FixedLenFeature([], tf.string),
             'label': tf.FixedLenFeature([], tf.float32),
+            'img_name': tf.FixedLenFeature([], tf.string)
         })
 
     # Convert from a scalar string tensor (whose single string has
     # length mnist.IMAGE_PIXELS) to a uint8 tensor with shape
     # [mnist.IMAGE_PIXELS].
     image = tf.decode_raw(features['image_raw'], tf.uint8)
+    img_name = tf.decode_raw(features['img_name'], tf.uint8)
 
-    image.set_shape([60 * 80 * 3])
+    image.set_shape([HEIGHT * WEIGHT * CHANNEL])
     image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
-    image = tf.reshape(image, [60, 80, 3])
+    image = tf.reshape(image, [HEIGHT, WEIGHT, CHANNEL])
+
+    # preprocessing
     tf.image.per_image_whitening(image)
-    # OPTIONAL: Could reshape into a 28x28 image and apply distortions
-    # here.  Since we are not applying any distortions in this
-    # example, and the next step expects the image to be flattened
-    # into a vector, we don't bother.
 
     # Convert label from a scalar uint8 tensor to an int32 scalar.
     label = tf.cast(features['label'], tf.float32)
     label = tf.reshape(label, [1])
 
-    return image, label
+    return image, label, img_name
 
-def submission_read_and_decode(filename_queue):
-    reader = tf.TFRecordReader()
-    _, serialized_example = reader.read(filename_queue)
-    features = tf.parse_single_example(
-        serialized_example,
-        # Defaults are not specified since both keys are required.
-        features={
-            'image_raw': tf.FixedLenFeature([], tf.string),
-            'img_name': tf.FixedLenFeature([], tf.string),
-        })
-
-    # Convert from a scalar string tensor (whose single string has
-    # length mnist.IMAGE_PIXELS) to a uint8 tensor with shape
-    # [mnist.IMAGE_PIXELS].
-    image = tf.decode_raw(features['image_raw'], tf.uint8)
-    img_name = tf.decode_raw(features['img_name'], tf.int64)
-
-    image.set_shape([60 * 80 * 3])
-    image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
-    image = tf.reshape(image, [60, 80, 3])
-    tf.image.per_image_whitening(image)
-    # OPTIONAL: Could reshape into a 28x28 image and apply distortions
-    # here.  Since we are not applying any distortions in this
-    # example, and the next step expects the image to be flattened
-    # into a vector, we don't bother.
-
-    # Convert label from a scalar uint8 tensor to an int32 scalar.
-    # label = tf.cast(features['label'], tf.float32)
-    img_name = tf.reshape(img_name, [1])
-
-    return image, img_name
+# def submission_read_and_decode(filename_queue):
+#     reader = tf.TFRecordReader()
+#     _, serialized_example = reader.read(filename_queue)
+#     features = tf.parse_single_example(
+#         serialized_example,
+#         # Defaults are not specified since both keys are required.
+#         features={
+#             'image_raw': tf.FixedLenFeature([], tf.string),
+#             'img_name': tf.FixedLenFeature([], tf.string),
+#         })
+#
+#     # Convert from a scalar string tensor (whose single string has
+#     # length mnist.IMAGE_PIXELS) to a uint8 tensor with shape
+#     # [mnist.IMAGE_PIXELS].
+#     image = tf.decode_raw(features['image_raw'], tf.uint8)
+#     img_name = tf.decode_raw(features['img_name'], tf.int64)
+#
+#     image.set_shape([60 * 80 * 3])
+#     image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
+#     image = tf.reshape(image, [60, 80, 3])
+#     tf.image.per_image_whitening(image)
+#     # OPTIONAL: Could reshape into a 28x28 image and apply distortions
+#     # here.  Since we are not applying any distortions in this
+#     # example, and the next step expects the image to be flattened
+#     # into a vector, we don't bother.
+#
+#     # Convert label from a scalar uint8 tensor to an int32 scalar.
+#     # label = tf.cast(features['label'], tf.float32)
+#     img_name = tf.reshape(img_name, [1])
+#
+#     return image, img_name
 
 
 def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
@@ -104,7 +104,8 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
 
             # Even when reading in multiple threads, share the filename
             # queue.
-            image, img_name = submission_read_and_decode(filename_queue)
+
+            image, label, img_name = read_and_decode(filename_queue)
 
             images = []
             img_names = []
@@ -127,16 +128,13 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
 
     elif train is "test" or "contrast":
 
-        if train is "test":
-            filename = os.path.join(train_dir, TEST_FILE)
-        else:
-            filename = os.path.join(train_dir, TEST_CONTRAST_FILE)
+        filename = os.path.join(train_dir, TEST_FILE if train is 'test' else TEST_CONTRAST_FILE)
 
         with tf.name_scope('input'):
             filename_queue = tf.train.string_input_producer(
                 [filename], num_epochs=num_epochs)
 
-            image, label = read_and_decode(filename_queue)
+            image, label, img_name = read_and_decode(filename_queue)
 
             images = []
             labels = []
@@ -156,23 +154,16 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
                 coord.join(threads)
         return np.array(images), np.array(labels)
 
-
-
-
     else:
-
         filename = os.path.join(train_dir, TRAIN_FILE if train else VALIDATION_FILE)
 
         with tf.name_scope('input'):
             filename_queue = tf.train.string_input_producer(
                 [filename], num_epochs=num_epochs)
 
-            # Even when reading in multiple threads, share the filename
-            # queue.
-            image, label = read_and_decode(filename_queue)
+            image, label, img_name = read_and_decode(filename_queue)
             # if one_hot_labels:
             #     label = tf.one_hot(label, mnist.NUM_CLASSES, dtype=tf.int32)
-
 
             # Shuffle the examples and collect them into batch_size batches.
             # (Internally uses a RandomShuffleQueue.)
