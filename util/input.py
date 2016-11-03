@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import tensorflow as tf
+import itertools
 import tensorflow.contrib.slim as slim
 from tensorflow.examples.tutorials.mnist import mnist
 
@@ -12,6 +13,7 @@ SUBMISSION_FILE = 'submission_test.tfrecords'
 CHANNEL = 3
 HEIGHT = 60
 WEIGHT = 80
+TRAIN_DIR = "data"
 
 def read_and_decode(filename_queue):
     reader = tf.TFRecordReader()
@@ -43,6 +45,44 @@ def read_and_decode(filename_queue):
     label = tf.reshape(label, [1])
 
     return image, label, img_name
+
+def aggregate_dataset(direction, dataset, dataset_subset='all'):
+
+    """
+        direction = ['left', 'center', 'right']
+        dataset = ['original', 'flip', 'contrast', 'flip_contrast']
+        dataset_subset = 'all' or ['train','val']
+
+        return {}
+    """
+    train_lst = []
+    test_lst = []
+    validation_lst = []
+
+    def get_subset_lst(subset):
+        subste_list = []
+        for a, b in list(itertools.product(direction, dataset)):
+
+            try:
+                dir = TRAIN_DIR + "/%s/%s" % (a, b)
+                train = [dir + "/" + file for file in os.listdir(dir) if subset in file]
+                subste_list += train
+            except:
+                pass
+        return [subset, subste_list]
+
+    train_lst = np.array(train_lst)
+    test_lst = np.array(test_lst)
+    validation_lst = np.array(validation_lst)
+
+    if dataset_subset is 'all':
+        dataset_subset = ['train', 'test', 'validation']
+
+    total_list = {}
+    for subset in dataset_subset:
+        total_list[get_subset_lst(subset)[0]] = get_subset_lst(subset)[1]
+
+    return total_list
 
 def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
     """Reads input data num_epochs times.
