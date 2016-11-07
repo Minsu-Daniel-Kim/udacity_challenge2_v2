@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 import tensorflow.contrib.slim as slim
-from input import inputs
+import inputs
 from model.lenet import lenet
 from model.vgg16 import vgg16
 from model.cifarnet import cifarnet
