@@ -52,7 +52,7 @@ def alexnet_v2(images,
                 net = slim.conv2d(net, 4096, [1, 1], scope='fc7')
                 net = slim.dropout(net, dropout_keep_prob, is_training=is_training,
                                    scope='dropout7')
-                net = slim.conv2d(net, num_classes, [1, 1],
+                net = slim.conv2d(net, NUM_CLASS, [1, 1],
                                   activation_fn=None,
                                   normalizer_fn=None,
                                   biases_initializer=tf.zeros_initializer,

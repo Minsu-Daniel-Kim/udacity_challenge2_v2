@@ -17,6 +17,7 @@ flags.DEFINE_integer('num_batches', None, 'Num of batches to train (epochs).')
 flags.DEFINE_float('learning_rate', None, 'Specify learning rate')
 # flags.DEFINE_float('momentum', None, 'Specify momentum')
 FLAGS = flags.FLAGS
+NUM_CLASS=3
 
 log_dir = "./log_%s/%s/train" % (FLAGS.prediction_type, FLAGS.model)
 
@@ -59,7 +60,10 @@ def main(train_dir, batch_size, num_batches, log_dir, prediction_type):
                                 batch_size,
                                 num_batches,
                                 one_hot_labels=True)
-        predictions, end_points = models[FLAGS.model](images, NUM_CLASS=2, is_training=True)
+        predictions, end_points = models[FLAGS.model](images, NUM_CLASS=NUM_CLASS, is_training=True)
+
+        print(labels)
+        print(predictions)
 
         slim.losses.softmax_cross_entropy(predictions, labels)
         total_loss = slim.losses.get_total_loss()

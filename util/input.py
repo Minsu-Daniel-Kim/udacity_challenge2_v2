@@ -14,7 +14,7 @@ CHANNEL = 3
 HEIGHT = 120
 WEIGHT = 160
 TRAIN_DIR = "data"
-NUM_CLASSES = 2
+NUM_CLASSES = 3
 
 def read_and_decode(filename_queue):
     reader = tf.TFRecordReader()
@@ -47,7 +47,7 @@ def read_and_decode(filename_queue):
     angle = tf.cast(features['angle'], tf.float32)
     angle = tf.reshape(angle, [1])
     label = tf.cast(features['label'], tf.int32)
-    label = tf.cond(tf.equal(label, 0), lambda: tf.convert_to_tensor(0), lambda: tf.convert_to_tensor(1))
+    # label = tf.cond(tf.equal(label, 0), lambda: tf.convert_to_tensor(0), lambda: tf.convert_to_tensor(1))
 
     return image, angle, label, img_name
 
