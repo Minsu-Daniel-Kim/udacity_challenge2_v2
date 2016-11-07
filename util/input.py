@@ -5,15 +5,16 @@ import itertools
 import tensorflow.contrib.slim as slim
 from tensorflow.examples.tutorials.mnist import mnist
 
-TRAIN_FILE = 'train.tfrecords'
-VALIDATION_FILE = 'validation.tfrecords'
-TEST_FILE = 'augmented_test.tfrecords'
-TEST_CONTRAST_FILE = 'augmented_test_contrast.tfrecords'
+# TRAIN_FILE = 'train.tfrecords'
+# VALIDATION_FILE = 'validation.tfrecords'
+# TEST_FILE = 'augmented_test.tfrecords'
+# TEST_CONTRAST_FILE = 'augmented_test_contrast.tfrecords'
 SUBMISSION_FILE = 'submission_test.tfrecords'
 CHANNEL = 3
 HEIGHT = 120
 WEIGHT = 160
 TRAIN_DIR = "data"
+NUM_CLASSES = 2
 
 def read_and_decode(filename_queue):
     reader = tf.TFRecordReader()
@@ -25,27 +26,30 @@ def read_and_decode(filename_queue):
             'image_raw': tf.FixedLenFeature([], tf.string),
             'angle': tf.FixedLenFeature([], tf.float32),
             'label': tf.FixedLenFeature([], tf.int64),
-            'img_name': tf.FixedLenFeature([], tf.string)
+            'img_name': tf.FixedLenFeature([], tf.int64)
         })
 
     # Convert from a scalar string tensor (whose single string has
     # length mnist.IMAGE_PIXELS) to a uint8 tensor with shape
     # [mnist.IMAGE_PIXELS].
     image = tf.decode_raw(features['image_raw'], tf.uint8)
-    img_name = tf.decode_raw(features['img_name'], tf.uint8)
-
+    # img_name = tf.decode_raw(features['img_name'], tf.uint8)
+    img_name = features['img_name']
     image.set_shape([HEIGHT * WEIGHT * CHANNEL])
-    image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
     image = tf.reshape(image, [HEIGHT, WEIGHT, CHANNEL])
 
     # preprocessing
-    tf.image.per_image_whitening(image)
+    # image = tf.image.rgb_to_grayscale(image)
+    # image = tf.image.per_image_standardization(image)
+    image = tf.image.per_image_whitening(image)
 
     # Convert label from a scalar uint8 tensor to an int32 scalar.
     angle = tf.cast(features['angle'], tf.float32)
     angle = tf.reshape(angle, [1])
+    label = tf.cast(features['label'], tf.int32)
+    label = tf.cond(tf.equal(label, 0), lambda: tf.convert_to_tensor(0), lambda: tf.convert_to_tensor(1))
 
-    return image, angle, img_name
+    return image, angle, label, img_name
 
 def aggregate_dataset(direction, dataset, dataset_subset='all'):
 
@@ -63,13 +67,15 @@ def aggregate_dataset(direction, dataset, dataset_subset='all'):
     def get_subset_lst(subset):
         subste_list = []
         for a, b in list(itertools.product(direction, dataset)):
+            folders = [folder for folder in os.listdir(TRAIN_DIR) if folder.startswith("udacity")]
+            for folder in folders:
 
-            try:
-                dir = TRAIN_DIR + "/%s/%s" % (a, b)
-                train = [dir + "/" + file for file in os.listdir(dir) if subset in file]
-                subste_list += train
-            except:
-                pass
+                try:
+                    dir = TRAIN_DIR + "/" + folder + "/%s/%s" % (a, b)
+                    train = [dir + "/" + file for file in os.listdir(dir) if subset in file]
+                    subste_list += train
+                except:
+                    pass
         return [subset, subste_list]
 
     train_lst = np.array(train_lst)
@@ -79,13 +85,14 @@ def aggregate_dataset(direction, dataset, dataset_subset='all'):
     if dataset_subset is 'all':
         dataset_subset = ['train', 'test', 'validation']
 
-    total_list = {}
+    total_dict = {}
     for subset in dataset_subset:
-        total_list[get_subset_lst(subset)[0]] = get_subset_lst(subset)[1]
+        total_dict[get_subset_lst(subset)[0]] = get_subset_lst(subset)[1]
 
-    return total_list
+    return total_dict
 
 def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
+
     """Reads input data num_epochs times.
     Args:
         train: Selects between the training (True) and validation (False) data.
@@ -101,9 +108,12 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
         Note that an tf.train.QueueRunner is added to the graph, which
         must be run using e.g. tf.train.start_queue_runners().
     """
+
+
     if not num_epochs: num_epochs = None
 
     if train is "submission":
+
         filename = os.path.join(train_dir, SUBMISSION_FILE)
 
         with tf.name_scope('input'):
@@ -113,8 +123,7 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
             # Even when reading in multiple threads, share the filename
             # queue.
 
-            image, label, img_name = read_and_decode(filename_queue)
-
+            image, angle, label, img_name = read_and_decode(filename_queue)
             images = []
             img_names = []
             with tf.Session() as sess:
@@ -134,18 +143,19 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
 
         return np.array(images), np.array(img_names)
 
-    elif train is "test" or "contrast":
+    elif train is ("test" or "contrast"):
 
-        filename = os.path.join(train_dir, TEST_FILE if train is 'test' else TEST_CONTRAST_FILE)
+
+        test_filenames = aggregate_dataset(['center'], ['original', 'contrast'], ['test'])['test']
 
         with tf.name_scope('input'):
             filename_queue = tf.train.string_input_producer(
-                [filename], num_epochs=num_epochs)
+                test_filenames, num_epochs=num_epochs)
 
-            image, label, img_name = read_and_decode(filename_queue)
+            image, angle, label, img_name = read_and_decode(filename_queue)
 
             images = []
-            labels = []
+            angles = []
 
             with tf.Session() as sess:
                 # Start populating the filename queue.
@@ -154,33 +164,46 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
 
                 for i in range(batch_size):
                     # Retrieve a single instance:
-                    a, b = sess.run([image, label])
+                    a, b = sess.run([image, angle])
                     images.append(a)
-                    labels.append(b)
+                    angles.append(b)
 
                 coord.request_stop()
                 coord.join(threads)
 
-        return np.array(images), np.array(labels)
+        return np.array(images), np.array(angles)
 
     else:
-        filename = os.path.join(train_dir, TRAIN_FILE if train else VALIDATION_FILE)
 
+        if train:
+
+            filenames = aggregate_dataset(['center'], ['original'], ['train'])['train']
+        else:
+            filenames = aggregate_dataset(['center'], ['original'], ['validation'])['validation']
+        print('input data: ', filenames)
         with tf.name_scope('input'):
             filename_queue = tf.train.string_input_producer(
-                [filename], num_epochs=num_epochs)
+                filenames, num_epochs=num_epochs)
 
-            image, label, img_name = read_and_decode(filename_queue)
-            # if one_hot_labels:
-            #     label = tf.one_hot(label, mnist.NUM_CLASSES, dtype=tf.int32)
-
+            image, angle, label, img_name = read_and_decode(filename_queue)
+            if one_hot_labels:
+                print("one_hot_labels")
+                label = tf.one_hot(label, NUM_CLASSES, dtype=tf.int32)
+                images, sparse_labels = tf.train.shuffle_batch(
+                    [image, label], batch_size=batch_size, num_threads=4,
+                    capacity=1000 + 3 * batch_size,
+                    # Ensures a minimum amount of shuffling of examples.
+                    min_after_dequeue=1000)
+                return images, sparse_labels
             # Shuffle the examples and collect them into batch_size batches.
             # (Internally uses a RandomShuffleQueue.)
             # We run this in two threads to avoid being a bottleneck.
-            images, sparse_labels = tf.train.shuffle_batch(
-                [image, label], batch_size=batch_size, num_threads=4,
-                capacity=1000 + 3 * batch_size,
-                # Ensures a minimum amount of shuffling of examples.
-                min_after_dequeue=1000)
+            else:
 
-        return images, sparse_labels
+                images, sparse_angles = tf.train.shuffle_batch(
+                    [image, angle], batch_size=batch_size, num_threads=4,
+                    capacity=1000 + 3 * batch_size,
+                    # Ensures a minimum amount of shuffling of examples.
+                    min_after_dequeue=1000)
+
+                return images, sparse_angles

@@ -19,7 +19,7 @@ def alexnet_v2_arg_scope(weight_decay=0.0005):
 
 
 def alexnet_v2(images,
-               num_classes=1,
+               NUM_CLASS,
                is_training=True,
                dropout_keep_prob=0.5,
                spatial_squeeze=True,

@@ -10,23 +10,25 @@ from model.alexnet import alexnet_v2
 from model.resnet_v1 import resnet_v1_50
 
 
+# slim = tf.contrib.slim
 
 
 
 flags = tf.app.flags
-flags.DEFINE_string('train_dir', './data',
-                    'Directory with the training data.')
-flags.DEFINE_integer('batch_size', 200, 'Batch size.')
-flags.DEFINE_integer('num_batches', 100, 'Num of batches to evaluate.')
+flags.DEFINE_string('train_dir', None, 'Directory with the training data.')
+flags.DEFINE_string('prediction_type', None, 'Regression / Classification')
 flags.DEFINE_string('model', None, "Model name")
+flags.DEFINE_integer('batch_size', 300, 'Batch size.')
+flags.DEFINE_integer('num_batches', None, 'Num of batches to train (epochs).')
+flags.DEFINE_float('learning_rate', None, 'Specify learning rate')
 # flags.DEFINE_string('log_dir', './log/eval',
 #                     'Directory where to log data.')
 # flags.DEFINE_string('checkpoint_dir', './log/train',
 #                     'Directory with the model checkpoint data.')
 FLAGS = flags.FLAGS
 
-log_dir = "./log/%s/eval" % FLAGS.model
-checkpoint_dir = "./log/%s/train" % FLAGS.model
+log_dir = "./log_%s/%s/eval" % (FLAGS.prediction_type, FLAGS.model)
+checkpoint_dir = "./log_%s/%s/train" % (FLAGS.prediction_type, FLAGS.model)
 
 models = {
 
@@ -38,30 +40,62 @@ models = {
     'vgg': vgg16
 }
 
-def main(train_dir, batch_size, num_batches, log_dir, checkpoint_dir=None):
-    if checkpoint_dir is None:
-        checkpoint_dir = log_dir
+def main(train_dir, batch_size, num_batches, log_dir, prediction_type, checkpoint_dir):
+    # if checkpoint_dir is None:
+    #     checkpoint_dir = log_dir
 
-    images, labels = inputs(train_dir, False, batch_size, num_batches,one_hot_labels=False)
-    predictions, end_points = models[FLAGS.model](images, is_training=False)
-    with tf.Session() as sess:
-        init_op = tf.initialize_all_variables()
+    if prediction_type == "regression":
+        print('regression is called')
+        images, angles = inputs(train_dir,
+                                False,
+                                batch_size,
+                                num_batches,
+                                one_hot_labels=False)
 
-    metrics_to_values, metrics_to_updates = slim.metrics.aggregate_metric_map({
-        "streaming_mse": slim.metrics.streaming_mean_squared_error(predictions, labels),
-    })
 
-    tf.scalar_summary('mse', metrics_to_values['streaming_mse'])
+        predictions, end_points = models[FLAGS.model](images, NUM_CLASS=1, is_training=False)
+        slim.losses.mean_squared_error(predictions, angles)
 
-    # Evaluate every 30 seconds
-    slim.evaluation.evaluation_loop(
-        '',
-        checkpoint_dir,
-        log_dir,
-        num_evals=num_batches,
-        eval_op=metrics_to_updates['streaming_mse'],
-        summary_op=tf.merge_all_summaries(),
-        eval_interval_secs=30)
+        total_loss = slim.losses.get_total_loss()
+        tf.scalar_summary('loss_mse', total_loss)
+
+        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+        train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
+
+        slim.learning.train(train_op, log_dir, save_summaries_secs=20)
+    else:
+        print('classification is called')
+        images, labels = inputs(train_dir,
+                                False,
+                                batch_size,
+                                num_batches,
+                                one_hot_labels=True)
+
+        predictions, end_points = models[FLAGS.model](images, NUM_CLASS=2, is_training=False)
+        predictions = tf.argmax(predictions, 1)
+        predictions = tf.one_hot(predictions, 2, dtype=tf.int32)
+        predictions = tf.cast(predictions, tf.int32)
+
+        with tf.Session() as sess:
+            init_op = tf.initialize_all_variables()
+
+        metrics_to_values, metrics_to_updates = slim.metrics.aggregate_metric_map({
+            "accuracy": slim.metrics.streaming_accuracy(predictions, labels),
+            "precision": slim.metrics.streaming_precision(predictions, labels),
+        })
+
+        tf.scalar_summary('accuracy', metrics_to_values['accuracy'])
+        tf.scalar_summary('precision', metrics_to_values['precision'])
+
+        # Evaluate every 30 seconds
+        slim.evaluation.evaluation_loop(
+            '',
+            checkpoint_dir,
+            log_dir,
+            num_evals=num_batches,
+            eval_op=[metrics_to_updates['accuracy'], metrics_to_updates['precision']],
+            summary_op=tf.merge_all_summaries(),
+            eval_interval_secs=30)
 
 
 if __name__=='__main__':
@@ -69,4 +103,5 @@ if __name__=='__main__':
          FLAGS.batch_size,
          FLAGS.num_batches,
          log_dir,
+         FLAGS.prediction_type,
          checkpoint_dir)

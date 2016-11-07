@@ -25,7 +25,7 @@ slim = tf.contrib.slim
 trunc_normal = lambda stddev: tf.truncated_normal_initializer(stddev=stddev)
 
 
-def cifarnet(images, num_classes=1, is_training=True,
+def cifarnet(images, NUM_CLASS, is_training=True,
              dropout_keep_prob=0.5,
              prediction_fn=slim.softmax,
              scope='CifarNet'):
@@ -57,9 +57,10 @@ def cifarnet(images, num_classes=1, is_training=True,
     """
     end_points = {}
 
-    with tf.variable_scope(scope, 'CifarNet', [images, num_classes]):
+    with tf.variable_scope(scope, 'CifarNet', [images, NUM_CLASS]):
 
-        tf.image_summary("image", images)
+
+        tf.image_summary('images', images, max_images = 20)
         net = slim.conv2d(images, 64, [5, 5], scope='conv1')
         end_points['conv1'] = net
         net = slim.max_pool2d(net, [2, 2], 2, scope='pool1')
@@ -78,7 +79,7 @@ def cifarnet(images, num_classes=1, is_training=True,
                            scope='dropout3')
         net = slim.fully_connected(net, 192, scope='fc4')
         end_points['fc4'] = net
-        net = slim.fully_connected(net, num_classes,
+        net = slim.fully_connected(net, NUM_CLASS,
                                       biases_initializer=tf.zeros_initializer,
                                       weights_initializer=trunc_normal(1 / 192.0),
                                       weights_regularizer=None,

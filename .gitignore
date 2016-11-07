@@ -1,5 +1,7 @@
 data
+analysis
 augmented_data
+log*
 data.zip
 # Byte-compiled / optimized / DLL files
 __pycache__/

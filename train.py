@@ -10,6 +10,7 @@ from model.resnet_v1 import resnet_v1_50
 
 flags = tf.app.flags
 flags.DEFINE_string('train_dir', None, 'Directory with the training data.')
+flags.DEFINE_string('prediction_type', None, 'Regression / Classification')
 flags.DEFINE_string('model', None, "Model name")
 flags.DEFINE_integer('batch_size', 300, 'Batch size.')
 flags.DEFINE_integer('num_batches', None, 'Num of batches to train (epochs).')
@@ -17,7 +18,7 @@ flags.DEFINE_float('learning_rate', None, 'Specify learning rate')
 # flags.DEFINE_float('momentum', None, 'Specify momentum')
 FLAGS = flags.FLAGS
 
-log_dir = "./log/%s/train" % FLAGS.model
+log_dir = "./log_%s/%s/train" % (FLAGS.prediction_type, FLAGS.model)
 
 models = {
 
@@ -30,22 +31,45 @@ models = {
 }
 
 
-def main(train_dir, batch_size, num_batches, log_dir):
-    images, labels = inputs(train_dir,
-                            True,
-                            batch_size,
-                            num_batches,
-                            one_hot_labels=False)
-    predictions, end_points = models[FLAGS.model](images, is_training=True)
+def main(train_dir, batch_size, num_batches, log_dir, prediction_type):
 
-    slim.losses.mean_squared_error(predictions, labels)
-    total_loss = slim.losses.get_total_loss()
-    tf.scalar_summary('loss', total_loss)
+    if prediction_type == "regression":
+        print('regression is called')
+        images, angles = inputs(train_dir,
+                                True,
+                                batch_size,
+                                num_batches,
+                                one_hot_labels=False)
 
-    optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
-    train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
 
-    slim.learning.train(train_op, log_dir, save_summaries_secs=20)
+        predictions, end_points = models[FLAGS.model](images, NUM_CLASS=1, is_training=True)
+        slim.losses.mean_squared_error(predictions, angles)
+
+        total_loss = slim.losses.get_total_loss()
+        tf.scalar_summary('loss_mse', total_loss)
+
+        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+        train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
+
+        slim.learning.train(train_op, log_dir, save_summaries_secs=20)
+    else:
+        print('classification is called')
+        images, labels = inputs(train_dir,
+                                True,
+                                batch_size,
+                                num_batches,
+                                one_hot_labels=True)
+        predictions, end_points = models[FLAGS.model](images, NUM_CLASS=2, is_training=True)
+
+        slim.losses.softmax_cross_entropy(predictions, labels)
+        total_loss = slim.losses.get_total_loss()
+        tf.scalar_summary('loss_cross_entropy', total_loss)
+
+        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+        train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
+
+        slim.learning.train(train_op, log_dir, save_summaries_secs=20)
+
 
 if __name__ == '__main__':
-    main(FLAGS.train_dir, FLAGS.batch_size, FLAGS.num_batches, log_dir)
+    main(FLAGS.train_dir, FLAGS.batch_size, FLAGS.num_batches, log_dir, FLAGS.prediction_type)

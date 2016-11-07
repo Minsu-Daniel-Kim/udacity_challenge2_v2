@@ -40,6 +40,6 @@ def drivenet(inputs,
             net = slim.fully_connected(net, 10, scope='fc12')
             net = slim.dropout(net, dropout_keep_prob, is_training=is_training,
                                scope='dropout13')
-            net = slim.fully_connected(net, 1, scope='fc14', activation_fn=tf.nn.tanh)
+            net = slim.fully_connected(net, 1, scope='fc14', activation_fn=None)
 
             return net
