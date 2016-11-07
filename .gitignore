@@ -5,7 +5,7 @@ data.zip
 __pycache__/
 *.py[cod]
 *$py.class
-
+analysis
 # C extensions
 *.so
 
