@@ -11,8 +11,8 @@ TEST_FILE = 'augmented_test.tfrecords'
 TEST_CONTRAST_FILE = 'augmented_test_contrast.tfrecords'
 SUBMISSION_FILE = 'submission_test.tfrecords'
 CHANNEL = 3
-HEIGHT = 60
-WEIGHT = 80
+HEIGHT = 120
+WEIGHT = 160
 TRAIN_DIR = "data"
 
 def read_and_decode(filename_queue):
@@ -23,7 +23,8 @@ def read_and_decode(filename_queue):
         # Defaults are not specified since both keys are required.
         features={
             'image_raw': tf.FixedLenFeature([], tf.string),
-            'label': tf.FixedLenFeature([], tf.float32),
+            'angle': tf.FixedLenFeature([], tf.float32),
+            'label': tf.FixedLenFeature([], tf.int64),
             'img_name': tf.FixedLenFeature([], tf.string)
         })
 
@@ -41,10 +42,10 @@ def read_and_decode(filename_queue):
     tf.image.per_image_whitening(image)
 
     # Convert label from a scalar uint8 tensor to an int32 scalar.
-    label = tf.cast(features['label'], tf.float32)
-    label = tf.reshape(label, [1])
+    angle = tf.cast(features['angle'], tf.float32)
+    angle = tf.reshape(angle, [1])
 
-    return image, label, img_name
+    return image, angle, img_name
 
 def aggregate_dataset(direction, dataset, dataset_subset='all'):
 
@@ -159,6 +160,7 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
 
                 coord.request_stop()
                 coord.join(threads)
+
         return np.array(images), np.array(labels)
 
     else:
