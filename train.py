@@ -20,7 +20,11 @@ flags.DEFINE_float('learning_rate', None, 'Specify learning rate')
 FLAGS = flags.FLAGS
 NUM_CLASS=5
 
-log_dir = "./log_%s/%s_%s/train" % (FLAGS.prediction_type, FLAGS.model, FLAGS.label)
+if FLAGS.label is None:
+    log_dir = "./log_%s/%s/train" % (FLAGS.prediction_type, FLAGS.model)
+else:
+    log_dir = "./log_%s/%s_%s/train" % (FLAGS.prediction_type, FLAGS.model, FLAGS.label)
+
 
 models = {
 
