@@ -11,8 +11,8 @@ from tensorflow.examples.tutorials.mnist import mnist
 # TEST_CONTRAST_FILE = 'augmented_test_contrast.tfrecords'
 SUBMISSION_FILE = 'submission_test.tfrecords'
 CHANNEL = 3
-HEIGHT = 120
-WEIGHT = 160
+HEIGHT = 60
+WEIGHT = 80
 TRAIN_DIR = "data"
 NUM_CLASSES = 3
 
