@@ -49,7 +49,8 @@ def main(train_dir, batch_size, num_batches, log_dir, prediction_type):
         total_loss = slim.losses.get_total_loss()
         tf.scalar_summary('loss_mse', total_loss)
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+        # optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+        optimizer = tf.train.RMSPropOptimizer(learning_rate=FLAGS.learning_rate)
         train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
 
         slim.learning.train(train_op, log_dir, save_summaries_secs=20)
