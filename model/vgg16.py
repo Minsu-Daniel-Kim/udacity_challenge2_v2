@@ -31,4 +31,4 @@ def vgg16(inputs, NUM_CLASS, is_training=True):
         net = slim.dropout(net, 0.5, scope='dropout8', is_training=is_training)
         net = slim.fully_connected(net, NUM_CLASS, activation_fn=None, scope='fc9')
 
-    return net
+    return net, None
