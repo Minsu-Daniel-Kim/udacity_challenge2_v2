@@ -11,7 +11,7 @@ from model.resnet_v1 import resnet_v1_50
 
 
 # slim = tf.contrib.slim
-NUM_CLASS=3
+NUM_CLASS=5
 
 
 flags = tf.app.flags
@@ -82,7 +82,7 @@ def main(train_dir, batch_size, num_batches, logdir, prediction_type, checkpoint
 
         predictions, end_points = models[FLAGS.model](images, NUM_CLASS=NUM_CLASS, is_training=False)
         predictions = tf.argmax(predictions, 1)
-        predictions = tf.one_hot(predictions, 2, dtype=tf.int32)
+        predictions = tf.one_hot(predictions, NUM_CLASS, dtype=tf.int32)
         predictions = tf.cast(predictions, tf.int32)
 
         # with tf.Session() as sess:
