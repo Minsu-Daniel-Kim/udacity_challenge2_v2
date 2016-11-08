@@ -36,6 +36,9 @@ def main(train_dir, batch_size, num_batches, log_dir, prediction_type):
 
     if prediction_type == "regression":
         print('regression is called')
+
+
+
         images, angles = inputs(train_dir,
                                 True,
                                 batch_size,
@@ -55,25 +58,28 @@ def main(train_dir, batch_size, num_batches, log_dir, prediction_type):
 
         slim.learning.train(train_op, log_dir, save_summaries_secs=20)
     else:
-        print('classification is called')
-        images, labels = inputs(train_dir,
-                                True,
-                                batch_size,
-                                num_batches,
-                                one_hot_labels=True)
-        predictions, end_points = models[FLAGS.model](images, NUM_CLASS=NUM_CLASS, is_training=True)
+        with tf.Session() as sess:
 
-        print(labels)
-        print(predictions)
+            print('session called')
+            print('classification is called')
+            images, labels = inputs(train_dir,
+                                    True,
+                                    batch_size,
+                                    num_batches, sess,
+                                    one_hot_labels=True)
+            predictions, end_points = models[FLAGS.model](images, NUM_CLASS=NUM_CLASS, is_training=True)
 
-        slim.losses.softmax_cross_entropy(predictions, labels)
-        total_loss = slim.losses.get_total_loss()
-        tf.scalar_summary('loss_cross_entropy', total_loss)
+            print(labels)
+            print(predictions)
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
-        train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
+            slim.losses.softmax_cross_entropy(predictions, labels)
+            total_loss = slim.losses.get_total_loss()
+            tf.scalar_summary('loss_cross_entropy', total_loss)
 
-        slim.learning.train(train_op, log_dir, save_summaries_secs=20)
+            optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+            train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
+
+            slim.learning.train(train_op, log_dir, save_summaries_secs=20)
 
 
 if __name__ == '__main__':

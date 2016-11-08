@@ -16,7 +16,19 @@ WEIGHT = 80
 TRAIN_DIR = "data"
 NUM_CLASSES = 5
 
-def read_and_decode(filename_queue):
+def label0():
+    return tf.constant(0)
+def label1():
+    return tf.constant(1)
+def label2():
+    return tf.constant(2)
+def label3():
+    return tf.constant(3)
+def label4():
+    return tf.constant(4)
+def default():
+    return tf.constant(-1)
+def read_and_decode(filename_queue, sess):
     reader = tf.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)
     features = tf.parse_single_example(
@@ -53,27 +65,38 @@ def read_and_decode(filename_queue):
 
     # Convert label from a scalar uint8 tensor to an int32 scalar.
     angle = tf.cast(features['label'], tf.float32)
-    angle = tf.reshape(angle, [1])
+
 
 
 
 
     # label = tf.cast(features['label'], tf.int32)
+    # sess = tf.Session()
+    # # sess.run(C_int)
+    # angle = tf.constant(-1)
+    # print('befoe eval')
+    # value = sess.run(angle)
+    # print('after eval')
+    # label = 0
+    # if value < -0.03966:
+    #     label = 0
+    # elif value < -0.00698:
+    #     label = 1
+    # elif value < 0.01266:
+    #     label = 2
+    # elif value < 0.04189:
+    #     label = 3
+    # elif value < 8.40376:
+    #     label = 4
 
-    with tf.Session() as sess:
-        value = angle.eval()
-        label = 0
-        if value < -0.03966:
-            label = 0
-        elif value < -0.00698:
-            label = 1
-        elif value < 0.01266:
-            label = 2
-        elif value < 0.04189:
-            label = 3
-        elif value < 8.40376:
-            label = 4
-    label = tf.constant(label)
+    label = tf.cond(tf.less(angle, tf.constant(-0.03966)), label0,
+            lambda: tf.cond(tf.less(angle, tf.constant(-0.00698)), label1,
+                            lambda: tf.cond(tf.less(angle, tf.constant(0.01266)), label2,
+                                            lambda: tf.cond(tf.less(angle, tf.constant(0.04189)), label3, label4))))
+    # with tf.Session() as sess:
+    #     print(label.eval())
+    # label = tf.constant(label)
+    angle = tf.reshape(angle, [1])
 
     # label = None
     # label = tf.cond(tf.equal(label, 0), lambda: tf.convert_to_tensor(0), lambda: tf.convert_to_tensor(1))
@@ -120,7 +143,7 @@ def aggregate_dataset(direction, dataset, dataset_subset='all'):
 
     return total_dict
 
-def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
+def inputs(train_dir, train, batch_size, num_epochs, sess, one_hot_labels=False):
 
     """Reads input data num_epochs times.
     Args:
@@ -213,8 +236,8 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
         with tf.name_scope('input'):
             filename_queue = tf.train.string_input_producer(
                 filenames, num_epochs=num_epochs)
-
-            image, angle, label, img_name = read_and_decode(filename_queue)
+            print('before read_and_decode')
+            image, angle, label, img_name = read_and_decode(filename_queue, sess)
             if one_hot_labels:
                 print("one_hot_labels")
                 label = tf.one_hot(label, NUM_CLASSES, dtype=tf.int32)
