@@ -42,7 +42,7 @@ models = {
 
 def main(train_dir, batch_size, num_batches, logdir, prediction_type, checkpoint_dir):
     config = tf.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 0.2
+    config.gpu_options.per_process_gpu_memory_fraction = 0.4
     session = tf.Session(config=config)
 
 
