@@ -27,7 +27,7 @@ def read_and_decode(filename_queue):
             # 'angle': tf.FixedLenFeature([], tf.float32),
             # 'label': tf.FixedLenFeature([], tf.int64),
             'label': tf.FixedLenFeature([], tf.float32),
-            'img_name': tf.FixedLenFeature([], tf.int64)
+            # 'img_name': tf.FixedLenFeature([], tf.int64)
         })
 
     # Convert from a scalar string tensor (whose single string has
@@ -39,7 +39,8 @@ def read_and_decode(filename_queue):
 
 
 
-    img_name = features['img_name']
+    # img_name = features['img_name']
+    img_name = None
     image.set_shape([HEIGHT * WEIGHT * CHANNEL])
     image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
     image = tf.reshape(image, [HEIGHT, WEIGHT, CHANNEL])
