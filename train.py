@@ -32,7 +32,7 @@ models = {
 }
 
 
-def main(train_dir, batch_size, num_batches, log_dir, prediction_type):
+def main(train_dir, batch_size, num_batches, logdir, prediction_type):
 
     if prediction_type == "regression":
         print('regression is called')
@@ -56,7 +56,7 @@ def main(train_dir, batch_size, num_batches, log_dir, prediction_type):
         optimizer = tf.train.RMSPropOptimizer(learning_rate=FLAGS.learning_rate)
         train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
 
-        slim.learning.train(train_op, log_dir, save_summaries_secs=20)
+        slim.learning.train(train_op, logdir, save_summaries_secs=20)
     else:
 
 
@@ -79,7 +79,7 @@ def main(train_dir, batch_size, num_batches, log_dir, prediction_type):
         optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
         train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
 
-        slim.learning.train(train_op, log_dir, save_summaries_secs=20)
+        slim.learning.train(train_op, logdir, save_summaries_secs=20)
 
 
 if __name__ == '__main__':

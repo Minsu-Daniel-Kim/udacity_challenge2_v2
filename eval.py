@@ -76,8 +76,8 @@ def main(train_dir, batch_size, num_batches, log_dir, prediction_type, checkpoin
         predictions = tf.one_hot(predictions, 2, dtype=tf.int32)
         predictions = tf.cast(predictions, tf.int32)
 
-        with tf.Session() as sess:
-            init_op = tf.initialize_all_variables()
+        # with tf.Session() as sess:
+        #     init_op = tf.initialize_all_variables()
 
         metrics_to_values, metrics_to_updates = slim.metrics.aggregate_metric_map({
             "accuracy": slim.metrics.streaming_accuracy(predictions, labels),
