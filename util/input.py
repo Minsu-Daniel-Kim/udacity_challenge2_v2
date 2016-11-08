@@ -28,6 +28,16 @@ def label4():
     return tf.constant(4)
 def default():
     return tf.constant(-1)
+
+
+def convert_data_to_tensors(x, y):
+    inputs = tf.constant(x)
+    inputs.set_shape([x.shape[0], x.shape[1], x.shape[2], x.shape[3]])
+
+    outputs = tf.constant(y)
+    outputs.set_shape([y.shape[0], 1])
+    return inputs, outputs
+
 def read_and_decode(filename_queue):
     reader = tf.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)
@@ -74,6 +84,7 @@ def read_and_decode(filename_queue):
 
     angle = tf.reshape(angle, [1])
 
+
     # label = None
     # label = tf.cond(tf.equal(label, 0), lambda: tf.convert_to_tensor(0), lambda: tf.convert_to_tensor(1))
 
@@ -119,7 +130,7 @@ def aggregate_dataset(direction, dataset, dataset_subset='all'):
 
     return total_dict
 
-def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
+def inputs(train_dir, train, batch_size, num_epochs, label=None, one_hot_labels=False):
 
     """Reads input data num_epochs times.
     Args:
@@ -228,10 +239,58 @@ def inputs(train_dir, train, batch_size, num_epochs, one_hot_labels=False):
             # We run this in two threads to avoid being a bottleneck.
             else:
 
-                images, sparse_angles = tf.train.shuffle_batch(
-                    [image, angle], batch_size=batch_size, num_threads=4,
-                    capacity=1000 + 3 * batch_size,
-                    # Ensures a minimum amount of shuffling of examples.
-                    min_after_dequeue=1000)
+
+                if label is None:
+
+
+                    images, sparse_angles = tf.train.shuffle_batch(
+                        [image, angle], batch_size=batch_size, num_threads=4,
+                        capacity=1000 + 3 * batch_size,
+                        # Ensures a minimum amount of shuffling of examples.
+                        min_after_dequeue=1000)
+                else:
+                    images = []
+                    angles = []
+
+                    with tf.Session() as sess:
+                        # Start populating the filename queue.
+                        coord = tf.train.Coordinator()
+                        threads = tf.train.start_queue_runners(coord=coord)
+
+                        images, sparse_angles = tf.train.shuffle_batch(
+                            [image, angle], batch_size=batch_size, num_threads=4,
+                            capacity=1000 + 3 * batch_size,
+                            # Ensures a minimum amount of shuffling of examples.
+                            min_after_dequeue=1000)
+
+                        for i in range(batch_size):
+                            # Retrieve a single instance:
+                            img, ang = sess.run([images, sparse_angles])
+                            print(ang)
+                            if label == 0:
+
+                                if angle < -0.03966:
+                                    images.append(img)
+                                    angles.append(ang)
+                            elif label == 1:
+                                if -0.03966 <= ang and ang < -0.00698:
+                                    images.append(img)
+                                    angles.append(ang)
+                            elif label == 2:
+                                if -0.00698 <= ang and ang < 0.01266:
+                                    images.append(img)
+                                    angles.append(ang)
+                            elif label == 3:
+                                if 0.01266 <= ang and ang < 0.04189:
+                                    images.append(img)
+                                    angles.append(ang)
+                            elif label == 4:
+                                if 0.04189 <= ang:
+                                    images.append(img)
+                                    angles.append(ang)
+
+                        coord.request_stop()
+                        coord.join(threads)
+
 
                 return images, sparse_angles
