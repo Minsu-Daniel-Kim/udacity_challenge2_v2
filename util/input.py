@@ -14,7 +14,7 @@ CHANNEL = 3
 HEIGHT = 60
 WEIGHT = 80
 TRAIN_DIR = "data"
-NUM_CLASSES = 3
+NUM_CLASSES = 5
 
 def read_and_decode(filename_queue):
     reader = tf.TFRecordReader()
@@ -54,8 +54,28 @@ def read_and_decode(filename_queue):
     # Convert label from a scalar uint8 tensor to an int32 scalar.
     angle = tf.cast(features['label'], tf.float32)
     angle = tf.reshape(angle, [1])
+
+
+
+
     # label = tf.cast(features['label'], tf.int32)
-    label = None
+
+    with tf.Session() as sess:
+        value = angle.eval()
+        label = 0
+        if value < -0.03966:
+            label = 0
+        elif value < -0.00698:
+            label = 1
+        elif value < 0.01266:
+            label = 2
+        elif value < 0.04189:
+            label = 3
+        elif value < 8.40376:
+            label = 4
+    label = tf.constant(label)
+
+    # label = None
     # label = tf.cond(tf.equal(label, 0), lambda: tf.convert_to_tensor(0), lambda: tf.convert_to_tensor(1))
 
     return image, angle, label, img_name

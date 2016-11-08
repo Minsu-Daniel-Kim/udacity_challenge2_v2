@@ -17,7 +17,7 @@ flags.DEFINE_integer('num_batches', None, 'Num of batches to train (epochs).')
 flags.DEFINE_float('learning_rate', None, 'Specify learning rate')
 # flags.DEFINE_float('momentum', None, 'Specify momentum')
 FLAGS = flags.FLAGS
-NUM_CLASS=3
+NUM_CLASS=5
 
 log_dir = "./log_%s/%s/train" % (FLAGS.prediction_type, FLAGS.model)
 
