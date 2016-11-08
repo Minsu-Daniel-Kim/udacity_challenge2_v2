@@ -34,8 +34,13 @@ def read_and_decode(filename_queue):
     # [mnist.IMAGE_PIXELS].
     image = tf.decode_raw(features['image_raw'], tf.uint8)
     # img_name = tf.decode_raw(features['img_name'], tf.uint8)
+
+
+
+
     img_name = features['img_name']
     image.set_shape([HEIGHT * WEIGHT * CHANNEL])
+    image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
     image = tf.reshape(image, [HEIGHT, WEIGHT, CHANNEL])
     # image = tf.image.resize_images(image, tf.pack(tf.constant(60, dtype=tf.int32), tf.constant(80, dtype=tf.int32)))
     
