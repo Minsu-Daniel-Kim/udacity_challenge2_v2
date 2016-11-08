@@ -40,9 +40,11 @@ models = {
     'vgg': vgg16
 }
 
-def main(train_dir, batch_size, num_batches, log_dir, prediction_type, checkpoint_dir):
-    # if checkpoint_dir is None:
-    #     checkpoint_dir = log_dir
+def main(train_dir, batch_size, num_batches, logdir, prediction_type, checkpoint_dir):
+    config = tf.ConfigProto()
+    config.gpu_options.per_process_gpu_memory_fraction = 0.2
+    session = tf.Session(config=config)
+
 
     if prediction_type == "regression":
         print('regression is called')
@@ -54,15 +56,22 @@ def main(train_dir, batch_size, num_batches, log_dir, prediction_type, checkpoin
 
 
         predictions, end_points = models[FLAGS.model](images, NUM_CLASS=1, is_training=False)
-        slim.losses.mean_squared_error(predictions, angles)
+        metrics_to_values, metrics_to_updates = slim.metrics.aggregate_metric_map({
+            "mse": slim.metrics.streaming_mean_squared_error(predictions, angles),
 
-        total_loss = slim.losses.get_total_loss()
-        tf.scalar_summary('loss_mse', total_loss)
+        })
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
-        train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
+        tf.scalar_summary('loss_mse', metrics_to_values['mse'])
 
-        slim.learning.train(train_op, log_dir, save_summaries_secs=20)
+
+        slim.evaluation.evaluation_loop(
+            '',
+            checkpoint_dir,
+            logdir,
+            num_evals=num_batches,
+            eval_op=metrics_to_updates['mse'],
+            summary_op=tf.merge_all_summaries(),
+            eval_interval_secs=30)
     else:
         print('classification is called')
         images, labels = inputs(train_dir,
@@ -91,7 +100,7 @@ def main(train_dir, batch_size, num_batches, log_dir, prediction_type, checkpoin
         slim.evaluation.evaluation_loop(
             '',
             checkpoint_dir,
-            log_dir,
+            logdir,
             num_evals=num_batches,
             eval_op=[metrics_to_updates['accuracy'], metrics_to_updates['precision']],
             summary_op=tf.merge_all_summaries(),
