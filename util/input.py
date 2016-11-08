@@ -24,8 +24,9 @@ def read_and_decode(filename_queue):
         # Defaults are not specified since both keys are required.
         features={
             'image_raw': tf.FixedLenFeature([], tf.string),
-            'angle': tf.FixedLenFeature([], tf.float32),
-            'label': tf.FixedLenFeature([], tf.int64),
+            # 'angle': tf.FixedLenFeature([], tf.float32),
+            # 'label': tf.FixedLenFeature([], tf.int64),
+            'label': tf.FixedLenFeature([], tf.float32),
             'img_name': tf.FixedLenFeature([], tf.int64)
         })
 
@@ -50,9 +51,10 @@ def read_and_decode(filename_queue):
     # image = tf.image.per_image_whitening(image)
 
     # Convert label from a scalar uint8 tensor to an int32 scalar.
-    angle = tf.cast(features['angle'], tf.float32)
+    angle = tf.cast(features['label'], tf.float32)
     angle = tf.reshape(angle, [1])
-    label = tf.cast(features['label'], tf.int32)
+    # label = tf.cast(features['label'], tf.int32)
+    label = None
     # label = tf.cond(tf.equal(label, 0), lambda: tf.convert_to_tensor(0), lambda: tf.convert_to_tensor(1))
 
     return image, angle, label, img_name
