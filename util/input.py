@@ -37,6 +37,7 @@ def read_and_decode(filename_queue):
     img_name = features['img_name']
     image.set_shape([HEIGHT * WEIGHT * CHANNEL])
     image = tf.reshape(image, [HEIGHT, WEIGHT, CHANNEL])
+    image = tf.image.resize_images(image, tf.pack(tf.constant(60, dtype=tf.int32), tf.constant(80, dtype=tf.int32)))
 
     # preprocessing
     # image = tf.image.rgb_to_grayscale(image)
