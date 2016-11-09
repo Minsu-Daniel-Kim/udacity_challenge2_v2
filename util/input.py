@@ -45,11 +45,11 @@ def read_and_decode(filename_queue):
         serialized_example,
         # Defaults are not specified since both keys are required.
         features={
-            # 'image_raw': tf.FixedLenFeature([], tf.string),
+            'image_raw': tf.FixedLenFeature([], tf.string),
             'angle': tf.FixedLenFeature([], tf.float32),
             # 'label': tf.FixedLenFeature([], tf.int64),
             'label': tf.FixedLenFeature([], tf.int64),
-            'img_name': tf.FixedLenFeature([], tf.int64)
+            # 'img_name': tf.FixedLenFeature([], tf.int64)
         })
 
     # Convert from a scalar string tensor (whose single string has
