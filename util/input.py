@@ -67,7 +67,7 @@ def read_and_decode(filename_queue):
     image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
     image = tf.reshape(image, [HEIGHT, WEIGHT, CHANNEL])
     # image = tf.image.resize_images(image, tf.pack(tf.constant(60, dtype=tf.int32), tf.constant(80, dtype=tf.int32)))
-    
+
     # preprocessing
     # image = tf.image.rgb_to_grayscale(image)
     # image = tf.image.per_image_standardization(image)
@@ -257,37 +257,24 @@ def inputs(train_dir, train, batch_size, num_epochs, label=None, one_hot_labels=
                         coord = tf.train.Coordinator()
                         threads = tf.train.start_queue_runners(coord=coord)
 
-                        images, sparse_angles = tf.train.shuffle_batch(
-                            [image, angle], batch_size=batch_size, num_threads=4,
-                            capacity=1000 + 3 * batch_size,
-                            # Ensures a minimum amount of shuffling of examples.
-                            min_after_dequeue=1000)
-
                         for i in range(batch_size):
                             # Retrieve a single instance:
-                            img, ang = sess.run([images, sparse_angles])
-                            print(ang)
+                            img, ang = sess.run([image, angle])
                             if label == 0:
 
                                 if angle < -0.03966:
-                                    images.append(img)
-                                    angles.append(ang)
-                            elif label == 1:
-                                if -0.03966 <= ang and ang < -0.00698:
-                                    images.append(img)
-                                    angles.append(ang)
-                            elif label == 2:
-                                if -0.00698 <= ang and ang < 0.01266:
-                                    images.append(img)
-                                    angles.append(ang)
-                            elif label == 3:
-                                if 0.01266 <= ang and ang < 0.04189:
-                                    images.append(img)
-                                    angles.append(ang)
-                            elif label == 4:
-                                if 0.04189 <= ang:
-                                    images.append(img)
-                                    angles.append(ang)
+                                    images.append(a)
+                                    angles.append(b)
+                                # -0.03966 - 0.00698
+                                # 0.01266
+                                # 0.04189
+                            if label == 1:
+
+                            if label == 2:
+                            if label == 3:
+                            if label == 4:
+
+
 
                         coord.request_stop()
                         coord.join(threads)
