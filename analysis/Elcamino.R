@@ -1,6 +1,9 @@
 library(data.table)
 library(dplyr)
+library(arules)
 library(ggplot2)
+data1 <- fread("interpolated_1.csv")
+data2$file <- 'data1'
 data2 <- fread("interpolated-2.csv")
 data2$file <- 'data2'
 data3 <- fread("interpolated-3.csv")
@@ -12,9 +15,45 @@ data5$file <- 'data5'
 data6 <- fread("interpolated-6.csv")
 data6$file <- 'data6'
 
+
 data <- rbind(data2, data3, data4, data5, data6)
 
 data.center <- filter(data, frame_id == 'center_camera')
+
+data.center <- select(data.center, filename, angle, speed)
+
+data.center %>% ggplot(aes(x = speed, y = angle)) + geom_point() + xlim(c(5, 20))
+
+
+quantile(data.center$speed, probs = c(0, 0.01, 0.1, 0.9, 1))
+
+
+tmp <- filter(data.center, speed < 5) %>% select(angle)
+var(tmp$angle)
+tmp %>% ggplot(aes(x = angle)) + geom_histogram(bins=100)
+tmp2 <- filter(data.center, speed >= 5, speed < 10) %>% select(angle)
+var(tmp2$angle)
+tmp2 %>% ggplot(aes(x = angle)) + geom_histogram(bins=100)
+tmp3 <- filter(data.center, speed >= 10, speed < 15) %>% select(angle)
+var(tmp3$angle)
+
+summary(tmp2)
+
+
+
+ggplot(data.center, aes(x =angle)) + geom_histogram(bins = 1000) + xlim(c(-1, 1))
+
+discretize(data.center$angle, method = 'frequency', categories = 5)
+data.center$label = discretize(data.center$angle, method = 'frequency', categories = 5)
+
+head(data.center)
+
+
+ggplot(data.center, aes(x =angle, fill = label)) + geom_histogram(bins = 300) + xlim(c(-1, 1))
+
+filter(data.center, label == 1) %>% select(angle) %>% summary()
+
+ggplot(filter(data.center, label == 5), aes(x = angle)) + geom_histogram(bins = 200)
 
 filter(data.center, speed !=0, -2 < angle, angle < 2) %>% 
   ggplot(aes(x = angle)) + geom_histogram(bins = 500)

@@ -45,7 +45,7 @@ def read_and_decode(filename_queue):
         serialized_example,
         # Defaults are not specified since both keys are required.
         features={
-            'image_raw': tf.FixedLenFeature([], tf.string),
+            # 'image_raw': tf.FixedLenFeature([], tf.string),
             'angle': tf.FixedLenFeature([], tf.float32),
             # 'label': tf.FixedLenFeature([], tf.int64),
             'label': tf.FixedLenFeature([], tf.int64),
@@ -56,6 +56,7 @@ def read_and_decode(filename_queue):
     # length mnist.IMAGE_PIXELS) to a uint8 tensor with shape
     image = tf.decode_raw(features['image_raw'], tf.uint8)
     # img_name = tf.decode_raw(features['img_name'], tf.uint8)
+    img_name = None
     img_name = tf.cast(features['img_name'], tf.uint8)
     image.set_shape([HEIGHT * WEIGHT * CHANNEL])
     image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
