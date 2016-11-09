@@ -84,7 +84,6 @@ def read_and_decode(filename_queue):
     return image, angle, label, img_name
 
 def aggregate_dataset(direction, dataset, label, dataset_subset='all'):
-
     """
         direction = ['left', 'center', 'right']
         dataset = ['original', 'flip', 'contrast', 'flip_contrast']
@@ -102,16 +101,26 @@ def aggregate_dataset(direction, dataset, label, dataset_subset='all'):
         for a, b in list(itertools.product(direction, dataset)):
             folders = [folder for folder in os.listdir(TRAIN_DIR) if folder.startswith("udacity")]
             for folder in folders:
-
+                # print(folder)
                 try:
-                    if label is None:
+                    if label is -1:
+                        print("ho")
 
                         dir = TRAIN_DIR + "/" + folder + "/%s/%s" % (a, b)
+                        labels = [file for file in os.listdir(dir) if file.startswith("label")]
+                        # print(labels)
+                        train = []
+                        for item in labels:
+
+                            train += [dir + "/" + item +'/'+ file2 for file2 in os.listdir(dir + '/' + item) if subset in file2]
                     else:
+
                         dir = TRAIN_DIR + "/" + folder + "/%s/%s/label%s" % (a, b, label)
-                    train = [dir + "/" + file for file in os.listdir(dir) if subset in file]
+                        train = [dir + "/" + file for file in os.listdir(dir) if subset in file]
                     subste_list += train
+
                 except:
+
                     pass
         return [subset, subste_list]
 
@@ -211,10 +220,11 @@ def inputs(train_dir, train, batch_size, num_epochs, label=None, one_hot_labels=
         return np.array(images), np.array(angles)
 
     else:
-
+        print('label : ', label)
         if train:
 
             filenames = aggregate_dataset(['center'], ['original'], label, ['train'])['train']
+
         else:
             filenames = aggregate_dataset(['center'], ['original'], label, ['validation'])['validation']
 
