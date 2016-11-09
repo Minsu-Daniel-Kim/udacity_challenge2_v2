@@ -57,7 +57,7 @@ def read_and_decode(filename_queue):
     image = tf.decode_raw(features['image_raw'], tf.uint8)
     # img_name = tf.decode_raw(features['img_name'], tf.uint8)
     img_name = None
-    img_name = tf.cast(features['img_name'], tf.uint8)
+    # img_name = tf.cast(features['img_name'], tf.uint8)
     image.set_shape([HEIGHT * WEIGHT * CHANNEL])
     image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
     image = tf.reshape(image, [HEIGHT, WEIGHT, CHANNEL])
