@@ -44,11 +44,7 @@ def main(train_dir, batch_size, num_batches, logdir, prediction_type, label):
 
 
 
-        images, angles = inputs(train_dir,
-                                True,
-                                batch_size,
-                                num_batches, label,
-                                one_hot_labels=False)
+        images, angles = inputs(train_dir, True, batch_size, num_batches, label, one_hot_labels=False)
 
 
         predictions, end_points = models[FLAGS.model](images, NUM_CLASS=1, is_training=True)
@@ -64,19 +60,9 @@ def main(train_dir, batch_size, num_batches, logdir, prediction_type, label):
         slim.learning.train(train_op, logdir, number_of_steps=1000000, save_summaries_secs=60)
     else:
 
-
-        print('session called')
         print('classification is called')
-        images, labels = inputs(train_dir,
-                                True,
-                                batch_size,
-                                num_batches,
-                                one_hot_labels=True)
+        images, labels = inputs(train_dir, True, batch_size, num_batches, label, one_hot_labels=True)
         predictions, end_points = models[FLAGS.model](images, NUM_CLASS=NUM_CLASS, is_training=True)
-
-        print(labels)
-        print(predictions)
-
         slim.losses.softmax_cross_entropy(predictions, labels)
         total_loss = slim.losses.get_total_loss()
         tf.scalar_summary('loss_cross_entropy', total_loss)
