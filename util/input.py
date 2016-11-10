@@ -38,6 +38,53 @@ def convert_data_to_tensors(x, y):
     outputs.set_shape([y.shape[0], 1])
     return inputs, outputs
 
+def read_and_decode_submission(filename_queue):
+    reader = tf.TFRecordReader()
+    _, serialized_example = reader.read(filename_queue)
+    features = tf.parse_single_example(
+        serialized_example,
+        # Defaults are not specified since both keys are required.
+        features={
+            'image_raw': tf.FixedLenFeature([], tf.string),
+            # 'angle': tf.FixedLenFeature([], tf.float32),
+            # 'label': tf.FixedLenFeature([], tf.int64),
+            # 'label': tf.FixedLenFeature([], tf.int64),
+            'img_name': tf.FixedLenFeature([], tf.string)
+        })
+
+    # Convert from a scalar string tensor (whose single string has
+    # length mnist.IMAGE_PIXELS) to a uint8 tensor with shape
+    image = tf.decode_raw(features['image_raw'], tf.uint8)
+    # img_name = tf.decode_raw(features['img_name'], tf.uint8)
+    # img_name = features['img_name']
+    img_name = tf.decode_raw(features['img_name'], tf.int64)
+    # img_name = tf.cast(features['img_name'], tf.uint8)
+
+    image.set_shape([HEIGHT * WEIGHT * CHANNEL])
+    image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
+    image = tf.reshape(image, [HEIGHT, WEIGHT, CHANNEL])
+    # image = tf.image.resize_images(image, tf.pack(tf.constant(60, dtype=tf.int32), tf.constant(80, dtype=tf.int32)))
+
+    # preprocessing
+    # image = tf.image.rgb_to_grayscale(image)
+    # image = tf.image.per_image_standardization(image)
+    # image = tf.image.per_image_whitening(image)
+
+    # Convert label from a scalar uint8 tensor to an int32 scalar.
+    # angle = tf.cast(features['angle'], tf.float32)
+    # label = tf.cast(features['label'], tf.uint8)
+    # label = features['label']
+    # label = tf.cond(tf.less(angle, tf.constant(-0.03966)), label0,
+    #         lambda: tf.cond(tf.less(angle, tf.constant(-0.00698)), label1,
+    #                         lambda: tf.cond(tf.less(angle, tf.constant(0.01266)), label2,
+    #                                         lambda: tf.cond(tf.less(angle, tf.constant(0.04189)), label3, label4))))
+
+    # angle = tf.reshape(angle, [1])
+
+
+    # label = None
+    # label = tf.cond(tf.equal(label, 0), lambda: tf.convert_to_tensor(0), lambda: tf.convert_to_tensor(1))
+    return image, img_name
 def read_and_decode(filename_queue):
     reader = tf.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)
@@ -169,8 +216,9 @@ def inputs(train_dir, train, batch_size, num_epochs, label=None, one_hot_labels=
 
             # Even when reading in multiple threads, share the filename
             # queue.
-
-            image, angle, label, img_name = read_and_decode(filename_queue)
+            print('works here')
+            image, img_name = read_and_decode_submission(filename_queue)
+            # image, angle, label, img_name = read_and_decode(filename_queue)
             images = []
             img_names = []
             with tf.Session() as sess:
@@ -193,7 +241,9 @@ def inputs(train_dir, train, batch_size, num_epochs, label=None, one_hot_labels=
     elif train is ("test" or "contrast"):
 
 
-        test_filenames = aggregate_dataset(['center'], ['original'], ['test'])['test']
+        # test_filenames = aggregate_dataset(['center'], ['original'], ['test'])['test']
+
+        test_filenames = "data/submission_test.tfrecords"
 
         with tf.name_scope('input'):
             filename_queue = tf.train.string_input_producer(

@@ -16,6 +16,7 @@ flags.DEFINE_integer('batch_size', 300, 'Batch size.')
 flags.DEFINE_integer('label', -1, 'label')
 flags.DEFINE_integer('num_batches', None, 'Num of batches to train (epochs).')
 flags.DEFINE_float('learning_rate', None, 'Specify learning rate')
+flags.DEFINE_float('gpu', 1.0, 'Specify gpu')
 # flags.DEFINE_float('momentum', None, 'Specify momentum')
 FLAGS = flags.FLAGS
 NUM_CLASS=5
@@ -37,10 +38,15 @@ models = {
 }
 
 
-def main(train_dir, batch_size, num_batches, logdir, prediction_type, label):
+def main(train_dir, batch_size, num_batches, logdir, prediction_type, label, gpu):
+
+    config = tf.ConfigProto()
+    config.gpu_options.per_process_gpu_memory_fraction = gpu
+    session = tf.Session(config=config)
 
     if prediction_type == "regression":
         print('regression is called')
+
 
 
 
@@ -74,4 +80,4 @@ def main(train_dir, batch_size, num_batches, logdir, prediction_type, label):
 
 
 if __name__ == '__main__':
-    main(FLAGS.train_dir, FLAGS.batch_size, FLAGS.num_batches, log_dir, FLAGS.prediction_type, FLAGS.label)
+    main(FLAGS.train_dir, FLAGS.batch_size, FLAGS.num_batches, log_dir, FLAGS.prediction_type, FLAGS.label, FLAGS.gpu)
