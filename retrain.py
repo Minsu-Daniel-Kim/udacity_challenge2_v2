@@ -37,7 +37,7 @@ models = {
     'drivenet': drivenet,
     'vgg': vgg16
 }
-checkpoints_dir = "log_classification/cifarnet"
+checkpoints_dir = "log_classification/cifarnet/train"
 
 def get_init_fn():
     """Returns a function run by the chief worker to warm-start the training."""
@@ -56,7 +56,7 @@ def get_init_fn():
             variables_to_restore.append(var)
 
     return slim.assign_from_checkpoint_fn(
-        os.path.join(checkpoints_dir, 'model.ckpt'),
+        os.path.join(checkpoints_dir, 'model.ckpt-135839'),
         variables_to_restore)
 
 
@@ -85,7 +85,7 @@ def main(train_dir, batch_size, num_batches, logdir, prediction_type, label, gpu
             optimizer = tf.train.RMSPropOptimizer(learning_rate=FLAGS.learning_rate)
             train_op = slim.learning.create_train_op(total_loss, optimizer, summarize_gradients=True)
 
-            slim.learning.train(train_op, get_init_fn(), number_of_steps=1000000, save_summaries_secs=60)
+            slim.learning.train(train_op, logdir=train_dir, init_fn=get_init_fn(), number_of_steps=1000000, save_summaries_secs=60)
         else:
             pass
 
